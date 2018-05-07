@@ -31,8 +31,8 @@ import sys
 import pika
 import pifacedigitalio
 import pifaceio
-pf = pifaceio.PiFace()
-pfio= pifacedigitalio.PiFaceDigital()
+pfio = pifaceio.PiFace()
+pfdio = pifacedigitalio.PiFaceDigital()
 # ~~[Preprocessor Directives]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #      .--.      .'-.      .--.      .--.      .--.      .-'.      .--. #
 #::::'/::::::::'/::::::::'/::::::::'/::::::::'/::::::::'/::::::::'/:::::#
@@ -50,12 +50,12 @@ MOVEMENT_ENABLE_PIN = 0
 
 # --[PIN_LAYOUT]--#
 # [5V 0 1 2 3 4 5 6 7][0 1 2 3 4 5 6 7 GND]
-PF_ROTATION_ENABLE_PIN = 0
-PF_ROTATION_DIRECTION_PIN_1 = 1
-PF_ROTATION_DIRECTION_PIN_2 = 2
-PF_MOVEMENT_DIRECTION_PIN_1 = 3
-PF_MOVEMENT_DIRECTION_PIN_2 = 4
-PF_MOVEMENT_ENABLE_PIN = 5
+PF_ROTATION_ENABLE_PIN = 5
+PF_ROTATION_DIRECTION_PIN_1 = 4
+PF_ROTATION_DIRECTION_PIN_2 = 3
+PF_MOVEMENT_DIRECTION_PIN_1 = 2
+PF_MOVEMENT_DIRECTION_PIN_2 = 1
+PF_MOVEMENT_ENABLE_PIN = 0
 
 USERNAME = 'user'
 PASSWORD = 'password'
@@ -74,47 +74,47 @@ def callback(ch, method, properties, body):
     body = str(body, 'utf-8')
     if PIFACE_CONNECTED:
         if body == "F":
-            pf.write_pin(PF_MOVEMENT_DIRECTION_PIN_1, 1)
-            pf.write_pin(PF_MOVEMENT_DIRECTION_PIN_2, 0)
-            pf.write_pin(PF_ROTATION_DIRECTION_PIN_1, 1)
-            pf.write_pin(PF_ROTATION_DIRECTION_PIN_2, 0)
-            pf.write_pin(PF_MOVEMENT_ENABLE_PIN, 1)
-            pf.write_pin(PF_ROTATION_ENABLE_PIN, 0)
+            pfdio.leds[PF_MOVEMENT_DIRECTION_PIN_1].turn_on()
+            pfdio.leds[PF_MOVEMENT_DIRECTION_PIN_2].turn_off()
+            pfdio.leds[PF_ROTATION_DIRECTION_PIN_1].turn_off()
+            pfdio.leds[PF_ROTATION_DIRECTION_PIN_2].turn_off()
+            pfdio.leds[PF_MOVEMENT_ENABLE_PIN].turn_on()
+            pfdio.leds[PF_ROTATION_ENABLE_PIN].turn_off()
         elif body == "L":
-            pf.write_pin(PF_MOVEMENT_DIRECTION_PIN_1, 1)
-            pf.write_pin(PF_MOVEMENT_DIRECTION_PIN_2, 0)
-            pf.write_pin(PF_ROTATION_DIRECTION_PIN_1, 1)
-            pf.write_pin(PF_ROTATION_DIRECTION_PIN_2, 0)
-            pf.write_pin(PF_MOVEMENT_ENABLE_PIN, 0)
-            pf.write_pin(PF_ROTATION_ENABLE_PIN, 1)
+            pfdio.leds[PF_MOVEMENT_DIRECTION_PIN_1].turn_off()
+            pfdio.leds[PF_MOVEMENT_DIRECTION_PIN_2].turn_off()
+            pfdio.leds[PF_ROTATION_DIRECTION_PIN_1].turn_on()
+            pfdio.leds[PF_ROTATION_DIRECTION_PIN_2].turn_off()
+            pfdio.leds[PF_MOVEMENT_ENABLE_PIN].turn_off()
+            pfdio.leds[PF_ROTATION_ENABLE_PIN].turn_on()
         elif body == "R":
-            pf.write_pin(PF_MOVEMENT_DIRECTION_PIN_1, 1)
-            pf.write_pin(PF_MOVEMENT_DIRECTION_PIN_2, 0)
-            pf.write_pin(PF_ROTATION_DIRECTION_PIN_1, 0)
-            pf.write_pin(PF_ROTATION_DIRECTION_PIN_2, 1)
-            pf.write_pin(PF_MOVEMENT_ENABLE_PIN, 0)
-            pf.write_pin(PF_ROTATION_ENABLE_PIN, 1)
+            pfdio.leds[PF_MOVEMENT_DIRECTION_PIN_1].turn_off()
+            pfdio.leds[PF_MOVEMENT_DIRECTION_PIN_2].turn_off()
+            pfdio.leds[PF_ROTATION_DIRECTION_PIN_1].turn_off()
+            pfdio.leds[PF_ROTATION_DIRECTION_PIN_2].turn_on()
+            pfdio.leds[PF_MOVEMENT_ENABLE_PIN].turn_off()
+            pfdio.leds[PF_ROTATION_ENABLE_PIN].turn_on()
         elif body == "B":
-            pf.write_pin(PF_MOVEMENT_DIRECTION_PIN_1, 0)
-            pf.write_pin(PF_MOVEMENT_DIRECTION_PIN_2, 1)
-            pf.write_pin(PF_ROTATION_DIRECTION_PIN_1, 1)
-            pf.write_pin(PF_ROTATION_DIRECTION_PIN_2, 0)
-            pf.write_pin(PF_MOVEMENT_ENABLE_PIN, 1)
-            pf.write_pin(PF_ROTATION_ENABLE_PIN, 0)
+            pfdio.leds[PF_MOVEMENT_DIRECTION_PIN_1].turn_off()
+            pfdio.leds[PF_MOVEMENT_DIRECTION_PIN_2].turn_on()
+            pfdio.leds[PF_ROTATION_DIRECTION_PIN_1].turn_off()
+            pfdio.leds[PF_ROTATION_DIRECTION_PIN_2].turn_off()
+            pfdio.leds[PF_MOVEMENT_ENABLE_PIN].turn_on()
+            pfdio.leds[PF_ROTATION_ENABLE_PIN].turn_off()
         elif body == "S":
-            pf.write_pin(PF_MOVEMENT_DIRECTION_PIN_1, 1)
-            pf.write_pin(PF_MOVEMENT_DIRECTION_PIN_2, 0)
-            pf.write_pin(PF_ROTATION_DIRECTION_PIN_1, 1)
-            pf.write_pin(PF_ROTATION_DIRECTION_PIN_2, 0)
-            pf.write_pin(PF_MOVEMENT_ENABLE_PIN, 0)
-            pf.write_pin(PF_ROTATION_ENABLE_PIN, 0)
+            pfdio.leds[PF_MOVEMENT_DIRECTION_PIN_1].turn_off()
+            pfdio.leds[PF_MOVEMENT_DIRECTION_PIN_2].turn_off()
+            pfdio.leds[PF_ROTATION_DIRECTION_PIN_1].turn_off()
+            pfdio.leds[PF_ROTATION_DIRECTION_PIN_2].turn_off()
+            pfdio.leds[PF_MOVEMENT_ENABLE_PIN].turn_off()
+            pfdio.leds[PF_ROTATION_ENABLE_PIN].turn_off()
         else:
-            pf.write_pin(PF_MOVEMENT_DIRECTION_PIN_1, 1)
-            pf.write_pin(PF_MOVEMENT_DIRECTION_PIN_2, 0)
-            pf.write_pin(PF_ROTATION_DIRECTION_PIN_1, 1)
-            pf.write_pin(PF_ROTATION_DIRECTION_PIN_2, 0)
-            pf.write_pin(PF_MOVEMENT_ENABLE_PIN, 0)
-            pf.write_pin(PF_ROTATION_ENABLE_PIN, 0)
+            pfdio.leds[PF_MOVEMENT_DIRECTION_PIN_1].turn_off()
+            pfdio.leds[PF_MOVEMENT_DIRECTION_PIN_2].turn_off()
+            pfdio.leds[PF_ROTATION_DIRECTION_PIN_1].turn_off()
+            pfdio.leds[PF_ROTATION_DIRECTION_PIN_2].turn_off()
+            pfdio.leds[PF_MOVEMENT_ENABLE_PIN].turn_off()
+            pfdio.leds[PF_ROTATION_ENABLE_PIN].turn_off()
             print("[ERROR] Unknown Message: {0}".format(body))
             body = "S"
     else:
@@ -173,12 +173,12 @@ def callback(ch, method, properties, body):
 if __name__ == '__main__':
 
     if PIFACE_CONNECTED:
-        pf.write_pin(PF_MOVEMENT_DIRECTION_PIN_1, 1)
-        pf.write_pin(PF_MOVEMENT_DIRECTION_PIN_2, 0)
-        pf.write_pin(PF_ROTATION_DIRECTION_PIN_1, 1)
-        pf.write_pin(PF_ROTATION_DIRECTION_PIN_2, 0)
-        pf.write_pin(PF_MOVEMENT_ENABLE_PIN, 0)
-        pf.write_pin(PF_ROTATION_ENABLE_PIN, 0)
+        pfdio.leds[PF_MOVEMENT_DIRECTION_PIN_1].turn_off()
+        pfdio.leds[PF_MOVEMENT_DIRECTION_PIN_2].turn_off()
+        pfdio.leds[PF_ROTATION_DIRECTION_PIN_1].turn_off()
+        pfdio.leds[PF_ROTATION_DIRECTION_PIN_2].turn_off()
+        pfdio.leds[PF_MOVEMENT_ENABLE_PIN].turn_off()
+        pfdio.leds[PF_ROTATION_ENABLE_PIN].turn_off()
     else:
         if GPIO_MODE == "10":
             GPIO.setmode(GPIO.BOARD)
