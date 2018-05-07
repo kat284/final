@@ -29,8 +29,8 @@ import RPi.GPIO as GPIO
 import bluetooth
 import sys
 import pika
-from rmq_params import *
-
+import pifacedigitalio
+pfdio = pifacedigitalio.PiFaceDigital()
 # ~~[Preprocessor Directives]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #      .--.      .'-.      .--.      .--.      .--.      .-'.      .--. #
 #::::'/::::::::'/::::::::'/::::::::'/::::::::'/::::::::'/::::::::'/:::::#
@@ -39,11 +39,28 @@ from rmq_params import *
 
 RMQ_IP = "localhost"
 GPIO_MODE = 10
-ROTATION_DIRECTION_PIN = 0
-ROTATION_PIN = 0
-MOVEMENT_PIN = 0
-MOVEMENT_DIRECTION_PIN = 0
+ROTATION_DIRECTION_PIN_1 = 0
+ROTATION_DIRECTION_PIN_2 = 0
+ROTATION_ENABLE_PIN = 0
+MOVEMENT_DIRECTION_PIN_1 = 0
+MOVEMENT_DIRECTION_PIN_2 = 0
+MOVEMENT_ENABLE_PIN = 0
 
+# --[PIN_LAYOUT]--#
+# [5V 0 1 2 3 4 5 6 7][0 1 2 3 4 5 6 7 GND]
+PF_ROTATION_ENABLE_PIN = 0
+PF_ROTATION_DIRECTION_PIN_1 = 1
+PF_ROTATION_DIRECTION_PIN_2 = 2
+PF_MOVEMENT_DIRECTION_PIN_1 = 3
+PF_MOVEMENT_DIRECTION_PIN_2 = 4
+PF_MOVEMENT_ENABLE_PIN = 5
+
+USERNAME = 'user'
+PASSWORD = 'password'
+VHOST = 'group6'
+ROVER_QUEUE = 'rover_queue'
+EXCHANGE = 'exchange'
+PIFACE_CONNECTED = True
 
 # ~~[Variables]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #      .--.      .'-.      .--.      .--.      .--.      .-'.      .--. #
@@ -53,18 +70,97 @@ MOVEMENT_DIRECTION_PIN = 0
 
 def callback(ch, method, properties, body):
     body = str(body, 'utf-8')
-    if body == "L":
-        print("Robot is turning Left")
-    elif body == "R":
-        print("Robot is turning Right")
-    elif body == "F":
-        print("Robot is turning Forward")
-    elif body == "B":
-        print("Robot is turning Backward")
-    elif body == "S":
-        print("Robot is turning Stop")
-    print("[Checkpoint] Current Task is {0}".format(body))
-
+    if PIFACE_CONNECTED:
+        if body == "F":
+            pfdio.leds[PF_MOVEMENT_DIRECTION_PIN_1].turn_on()
+            pfdio.leds[PF_MOVEMENT_DIRECTION_PIN_2].turn_off()
+            pfdio.leds[PF_ROTATION_DIRECTION_PIN_1].turn_on()
+            pfdio.leds[PF_ROTATION_DIRECTION_PIN_2].turn_off()
+            pfdio.leds[PF_MOVEMENT_ENABLE_PIN].turn_on()
+            pfdio.leds[PF_ROTATION_ENABLE_PIN].turn_off()
+        elif body == "L":
+            pfdio.leds[PF_MOVEMENT_DIRECTION_PIN_1].turn_on()
+            pfdio.leds[PF_MOVEMENT_DIRECTION_PIN_2].turn_off()
+            pfdio.leds[PF_ROTATION_DIRECTION_PIN_1].turn_on()
+            pfdio.leds[PF_ROTATION_DIRECTION_PIN_2].turn_off()
+            pfdio.leds[PF_MOVEMENT_ENABLE_PIN].turn_off()
+            pfdio.leds[PF_ROTATION_ENABLE_PIN].turn_on()
+        elif body == "R":
+            pfdio.leds[PF_MOVEMENT_DIRECTION_PIN_1].turn_on()
+            pfdio.leds[PF_MOVEMENT_DIRECTION_PIN_2].turn_off()
+            pfdio.leds[PF_ROTATION_DIRECTION_PIN_1].turn_off()
+            pfdio.leds[PF_ROTATION_DIRECTION_PIN_2].turn_on()
+            pfdio.leds[PF_MOVEMENT_ENABLE_PIN].turn_off()
+            pfdio.leds[PF_ROTATION_ENABLE_PIN].turn_on()
+        elif body == "B":
+            pfdio.leds[PF_MOVEMENT_DIRECTION_PIN_1].turn_off()
+            pfdio.leds[PF_MOVEMENT_DIRECTION_PIN_2].turn_on()
+            pfdio.leds[PF_ROTATION_DIRECTION_PIN_1].turn_on()
+            pfdio.leds[PF_ROTATION_DIRECTION_PIN_2].turn_off()
+            pfdio.leds[PF_MOVEMENT_ENABLE_PIN].turn_on()
+            pfdio.leds[PF_ROTATION_ENABLE_PIN].turn_off()
+        elif body == "S":
+            pfdio.leds[PF_MOVEMENT_DIRECTION_PIN_1].turn_on()
+            pfdio.leds[PF_MOVEMENT_DIRECTION_PIN_2].turn_off()
+            pfdio.leds[PF_ROTATION_DIRECTION_PIN_1].turn_on()
+            pfdio.leds[PF_ROTATION_DIRECTION_PIN_2].turn_off()
+            pfdio.leds[PF_MOVEMENT_ENABLE_PIN].turn_off()
+            pfdio.leds[PF_ROTATION_ENABLE_PIN].turn_off()
+        else:
+            pf.write_pin(PF_MOVEMENT_DIRECTION_PIN_1, 1)
+            pf.write_pin(PF_MOVEMENT_DIRECTION_PIN_2, 0)
+            pf.write_pin(PF_ROTATION_DIRECTION_PIN_1, 1)
+            pf.write_pin(PF_ROTATION_DIRECTION_PIN_2, 0)
+            pf.write_pin(PF_MOVEMENT_ENABLE_PIN, 0)
+            pf.write_pin(PF_ROTATION_ENABLE_PIN, 0)
+            print("[ERROR] Unknown Message: {0}".format(body))
+            body = "S"
+    else:
+        if body == "F":
+            GPIO.output(ROTATION_DIRECTION_PIN_1, GPIO.HIGH)
+            GPIO.output(ROTATION_DIRECTION_PIN_2, GPIO.LOW)
+            GPIO.output(ROTATION_ENABLE_PIN, GPIO.LOW)
+            GPIO.output(MOVEMENT_DIRECTION_PIN_1, GPIO.HIGH)
+            GPIO.output(MOVEMENT_DIRECTION_PIN_2, GPIO.LOW)
+            GPIO.output(MOVEMENT_ENABLE_PIN, GPIO.HIGH)
+        elif body == "L":
+            GPIO.output(ROTATION_DIRECTION_PIN_1, GPIO.HIGH)
+            GPIO.output(ROTATION_DIRECTION_PIN_2, GPIO.LOW)
+            GPIO.output(ROTATION_ENABLE_PIN, GPIO.HIGH)
+            GPIO.output(MOVEMENT_DIRECTION_PIN_1, GPIO.HIGH)
+            GPIO.output(MOVEMENT_DIRECTION_PIN_2, GPIO.LOW)
+            GPIO.output(MOVEMENT_ENABLE_PIN, GPIO.LOW)
+        elif body == "R":
+            GPIO.output(ROTATION_DIRECTION_PIN_1, GPIO.LOW)
+            GPIO.output(ROTATION_DIRECTION_PIN_2, GPIO.HIGH)
+            GPIO.output(ROTATION_ENABLE_PIN, GPIO.HIGH)
+            GPIO.output(MOVEMENT_DIRECTION_PIN_1, GPIO.HIGH)
+            GPIO.output(MOVEMENT_DIRECTION_PIN_2, GPIO.LOW)
+            GPIO.output(MOVEMENT_ENABLE_PIN, GPIO.LOW)
+        elif body == "B":
+            GPIO.output(ROTATION_DIRECTION_PIN_1, GPIO.HIGH)
+            GPIO.output(ROTATION_DIRECTION_PIN_2, GPIO.LOW)
+            GPIO.output(ROTATION_ENABLE_PIN, GPIO.LOW)
+            GPIO.output(MOVEMENT_DIRECTION_PIN_1, GPIO.LOW)
+            GPIO.output(MOVEMENT_DIRECTION_PIN_2, GPIO.HIGH)
+            GPIO.output(MOVEMENT_ENABLE_PIN, GPIO.HIGH)
+        elif body == "S":
+            GPIO.output(ROTATION_DIRECTION_PIN_1, GPIO.HIGH)
+            GPIO.output(ROTATION_DIRECTION_PIN_2, GPIO.LOW)
+            GPIO.output(ROTATION_ENABLE_PIN, GPIO.LOW)
+            GPIO.output(MOVEMENT_DIRECTION_PIN_1, GPIO.HIGH)
+            GPIO.output(MOVEMENT_DIRECTION_PIN_2, GPIO.LOW)
+            GPIO.output(MOVEMENT_ENABLE_PIN, GPIO.LOW)
+        else:
+            GPIO.output(ROTATION_DIRECTION_PIN_1, GPIO.HIGH)
+            GPIO.output(ROTATION_DIRECTION_PIN_2, GPIO.LOW)
+            GPIO.output(ROTATION_ENABLE_PIN, GPIO.LOW)
+            GPIO.output(MOVEMENT_DIRECTION_PIN_1, GPIO.HIGH)
+            GPIO.output(MOVEMENT_DIRECTION_PIN_2, GPIO.LOW)
+            GPIO.output(MOVEMENT_ENABLE_PIN, GPIO.LOW)
+            print("[ERROR] Unknown Message: {0}".format(body))
+            body = "S"""
+    print("[Checkpoint] Setting Rover Based on Message: {0}".format(body))
 
 # ~~[Functions]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #      .--.      .'-.      .--.      .--.      .--.      .-'.      .--. #
@@ -73,48 +169,65 @@ def callback(ch, method, properties, body):
 # ~~[Core]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
 if __name__ == '__main__':
-    if GPIO_MODE == "10":
-        GPIO.setmode(GPIO.BOARD)
+
+    if PIFACE_CONNECTED:
+        pfdio.leds[PF_MOVEMENT_DIRECTION_PIN_1].turn_on()
+        pfdio.leds[PF_MOVEMENT_DIRECTION_PIN_2].turn_off()
+        pfdio.leds[PF_ROTATION_DIRECTION_PIN_1].turn_on()
+        pfdio.leds[PF_ROTATION_DIRECTION_PIN_2].turn_off()
+        pfdio.leds[PF_MOVEMENT_ENABLE_PIN].turn_off()
+        pfdio.leds[PF_ROTATION_ENABLE_PIN].turn_off()
     else:
-        GPIO.setmode(GPIO.BCM)
-    #GPIO.setup(RED_PIN, GPIO.OUT)
+        if GPIO_MODE == "10":
+            GPIO.setmode(GPIO.BOARD)
+        else:
+            GPIO.setmode(GPIO.BCM)
+        GPIO.setup(ROTATION_DIRECTION_PIN_1, GPIO.OUT)
+        GPIO.setup(ROTATION_DIRECTION_PIN_2, GPIO.OUT)
+        GPIO.setup(ROTATION_ENABLE_PIN, GPIO.OUT)
+        GPIO.setup(MOVEMENT_DIRECTION_PIN_1, GPIO.OUT)
+        GPIO.setup(MOVEMENT_DIRECTION_PIN_2, GPIO.OUT)
+        GPIO.setup(MOVEMENT_ENABLE_PIN, GPIO.OUT)
+
+        GPIO.output(ROTATION_DIRECTION_PIN_1, GPIO.HIGH)
+        GPIO.output(ROTATION_DIRECTION_PIN_2, GPIO.LOW)
+        GPIO.output(ROTATION_ENABLE_PIN, GPIO.LOW)
+        GPIO.output(MOVEMENT_DIRECTION_PIN_1, GPIO.HIGH)
+        GPIO.output(MOVEMENT_DIRECTION_PIN_2, GPIO.LOW)
+        GPIO.output(MOVEMENT_ENABLE_PIN, GPIO.LOW)
 
     try:
         connection = 0
-        credentials = pika.PlainCredentials(username=rmq_params.get("username"), password=rmq_params.get("password"))
-        parameters = pika.ConnectionParameters(host=RMQ_IP, virtual_host=rmq_params.get("vhost"),
-                                               credentials=credentials)
+        credentials = pika.PlainCredentials(username=USERNAME, password=PASSWORD)
+        parameters = pika.ConnectionParameters(host=RMQ_IP, virtual_host=VHOST,credentials=credentials)
         connection = pika.BlockingConnection(parameters)
         channel = connection.channel()
     except:
-        print("[ERROR] Unable to connect to vhost '{0}' on RMQ server at '{1}' as user '{2}'".format(
-            rmq_params.get("vhost"), RMQ_IP, rmq_params.get("username")))
+        print("[ERROR] Unable to connect to vhost '{0}' on RMQ server at '{1}' as user '{2}'".format(PASSWORD, RMQ_IP, USERNAME))
         print("[ERROR] Verify that vhost is up, credentials are correct or the vhost name is correct!")
         print("[ERROR] Connection closing")
         if connection:
             connection.close()
-        GPIO.cleanup()
+        if not PIFACE_CONNECTED:
+            GPIO.cleanup()
         exit(1)
-    print("[Checkpoint] Connected to vhost '{0}' on RMQ server at '{1}' as user '{2}'".format(rmq_params.get("vhost"),
-                                                                                              RMQ_IP, rmq_params.get(
-            "username")))
+    print("[Checkpoint] Connected to vhost '{0}' on RMQ server at '{1}' as user '{2}'".format(VHOST, RMQ_IP, USERNAME))
     try:
-        channel.queue_bind(exchange=rmq_params.get("exchange"), queue=rmq_params.get("rover_queue"),
-                           routing_key=rmq_params.get("rover_queue"))
-        channel.basic_consume(callback, queue=rmq_params.get("rover_queue"), no_ack=True)
-        print("[Checkpoint] Consuming from RMQ queue: {0}".format(rmq_params.get("rover_queue")))
+        channel.queue_bind(exchange=EXCHANGE, queue=ROVER_QUEUE, routing_key=ROVER_QUEUE)
+        channel.basic_consume(callback, queue=ROVER_QUEUE, no_ack=True)
+        print("[Checkpoint] Consuming from RMQ queue: {0}".format(ROVER_QUEUE))
         channel.start_consuming()
     except:
-        print("[ERROR] The queue ({0}) was not found or the rover.py process was killed".format(
-            rmq_params.get("rover_queue")))
+        print("[ERROR] The queue ({0}) was not found or the rover.py process was killed".format(ROVER_QUEUE))
         print("[ERROR] Verify that the queue is up! You may have to restart the server")
         print("[ERROR] Connection closing")
         connection.close()
-        GPIO.cleanup()
+        if not PIFACE_CONNECTED:
+            GPIO.cleanup()
         exit(1)
 
-    # ~~[Core]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+#~~[Core]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #      .--.      .'-.      .--.      .--.      .--.      .-'.      .--. #
 #::::'/::::::::'/::::::::'/::::::::'/::::::::'/::::::::'/::::::::'/:::::#
 # `--'      `-.'      `--'      `--'      `--'      `--'      `.-'      #
-# ~~[End File]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+#~~[End File]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
